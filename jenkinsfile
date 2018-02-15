@@ -1,0 +1,25 @@
+node('maven') {
+  stage 'buildInDevelopment'
+  openshiftBuild(namespace: 'ocp-msnet-dev', buildConfig: 'musicstore', showBuildLogs: 'true')
+}
+
+node {
+  stage 'deployInDevelopment'
+  openshiftDeploy(namespace: 'ocp-msnet-dev', deploymentConfig: 'musicstore')
+  openshiftScale(namespace: 'ocp-msnet-dev', deploymentConfig: 'musicstore',replicaCount: '2')
+}
+
+node {
+  stage 'test'
+  try {
+    sh "curl -s --head --request GET http://musicstore-ocp-msnet-dev.apps.myocp.net/ | grep '200 OK'"
+    return true
+  } catch (Exception e) {
+    return false
+  }
+}
+
+node {
+  stage 'Deploy Live' 
+  input 'Promote the Dev image to Live?'
+}
